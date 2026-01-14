@@ -9,6 +9,8 @@ on:
 jobs:
   ruff:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       
@@ -28,6 +30,8 @@ jobs:
 
   typos:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       
