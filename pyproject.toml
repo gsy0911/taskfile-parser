@@ -31,4 +31,32 @@ build-backend = "hatchling.build"
 packages = ["src/taskfile_parser"]
 
 [dependency-groups]
-dev = []
+dev = [
+    "ty>=0.0.11",
+    "types-PyYAML>=6.0.0",
+]
+
+[tool.ruff]
+# Target Python 3.12
+target-version = "py312"
+
+# Set line length
+line-length = 120
+
+[tool.ruff.lint]
+# Enable common Python linting rules
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"
