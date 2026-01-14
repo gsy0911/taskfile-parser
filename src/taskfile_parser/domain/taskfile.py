@@ -19,20 +19,22 @@ class Task(BaseModel):
             return self.name
 
     def gen_buffer(self) -> str:
-        if self.requires and "vars" in self.requires:
+        vars_list = self.requires.get("vars") if self.requires else None
+        if vars_list:
             var_names = []
-            for v in self.requires["vars"]:
+            for v in vars_list:
                 if isinstance(v, dict):
-                    # Extract 'name' from dict format; use empty string if not present
-                    # Empty strings are filtered out below
-                    var_names.append(v.get("name", ""))
+                    # Extract 'name' from dict format, only if it exists and is non-empty
+                    name = v.get("name", "")
+                    if name:
+                        var_names.append(name)
                 else:
                     var_names.append(v)
-            # Filter out empty variable names and build the args string
-            args = " ".join([f"{v}=" for v in var_names if v])
-            if args:
+            if var_names:
+                args = " ".join([f"{v}=" for v in var_names])
                 return f"{args} task {self.gen_command()}"
         return f"task {self.gen_command()}"
+
 
 
 class Taskfile(BaseModel):
