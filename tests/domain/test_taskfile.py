@@ -150,6 +150,30 @@ class TestTask:
         assert "ENV=" in buffer
         assert "task backend:deploy" in buffer
 
+    def test_gen_buffer_with_requires_no_vars_key(self):
+        """Test generating buffer with requires dict but no vars key."""
+        task = Task(
+            desc="Test task",
+            prefix=None,
+            name="test-task",
+            requires={"other_field": "value"},
+        )
+        buffer = task.gen_buffer()
+        assert buffer == "task test-task"
+
+    def test_gen_buffer_with_dict_missing_name_key(self):
+        """Test generating buffer with dict item missing name key (should skip it)."""
+        task = Task(
+            desc="Test task",
+            prefix=None,
+            name="test-task",
+            requires={"vars": [{"enum": ["val1", "val2"]}, "VAR1"]},
+        )
+        buffer = task.gen_buffer()
+        # Should only include VAR1 since the dict item is missing name
+        assert "VAR1=" in buffer
+        assert "task test-task" in buffer
+
 
 class TestTaskfile:
     """Test cases for the Taskfile model."""
