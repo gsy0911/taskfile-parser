@@ -31,7 +31,10 @@ build-backend = "hatchling.build"
 packages = ["src/taskfile_parser"]
 
 [dependency-groups]
-dev = []
+dev = [
+    "ty>=0.0.11",
+    "types-PyYAML>=6.0.0",
+]
 
 [tool.ruff]
 # Target Python 3.12

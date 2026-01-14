@@ -44,7 +44,7 @@ class TaskFileRepository:
             else:
                 relative_path = Path(i.taskfile)
                 target_path = self.path.parent / relative_path
-                tasks.extend(TaskFileRepository(path=target_path, prefix=i.prefix)._read().tasks)
+                tasks.extend(TaskFileRepository(path=str(target_path), prefix=i.prefix)._read().tasks)
 
         return tasks
 

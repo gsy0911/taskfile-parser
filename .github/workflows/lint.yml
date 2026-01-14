@@ -44,10 +44,7 @@ jobs:
           python-version: '3.12'
       
       - name: Install dependencies
-        run: uv sync
-      
-      - name: Install ty
-        run: uv tool install ty@latest
+        run: uv sync --dev
       
       - name: Run ty check
-        run: uv tool run ty check src/
+        run: uv run ty check src/
