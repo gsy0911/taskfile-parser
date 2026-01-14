@@ -23,13 +23,16 @@ class Task(BaseModel):
             var_names = []
             for v in self.requires["vars"]:
                 if isinstance(v, dict):
+                    # Extract 'name' from dict format; use empty string if not present
+                    # Empty strings are filtered out below
                     var_names.append(v.get("name", ""))
                 else:
                     var_names.append(v)
+            # Filter out empty variable names and build the args string
             args = " ".join([f"{v}=" for v in var_names if v])
-            return f"{args} task {self.gen_command()}" if args else f"task {self.gen_command()}"
-        else:
-            return f"task {self.gen_command()}"
+            if args:
+                return f"{args} task {self.gen_command()}"
+        return f"task {self.gen_command()}"
 
 
 class Taskfile(BaseModel):
