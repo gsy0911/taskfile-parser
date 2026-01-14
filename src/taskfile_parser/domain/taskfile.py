@@ -36,7 +36,6 @@ class Task(BaseModel):
         return f"task {self.gen_command()}"
 
 
-
 class Taskfile(BaseModel):
     includes: list[Include]
     tasks: list[Task]
