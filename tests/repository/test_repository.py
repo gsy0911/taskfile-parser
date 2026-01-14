@@ -245,6 +245,60 @@ includes: {}
         assert len(taskfile.tasks) == 0
         assert len(taskfile.includes) == 0
 
+    def test_read_taskfile_with_dict_format_requires(self, tmp_path):
+        """Test reading a Taskfile with dict format requires (name and enum)."""
+        taskfile_path = tmp_path / "Taskfile.yml"
+        taskfile_content = """
+tasks:
+  deploy:
+    desc: Deploy to environment
+    requires:
+      vars:
+        - name: ENV
+          enum: [dev, beta, prod]
+"""
+        taskfile_path.write_text(taskfile_content)
+
+        repo = TaskFileRepository(path=str(taskfile_path))
+        taskfile = repo._read()
+
+        assert len(taskfile.tasks) == 1
+        assert taskfile.tasks[0].name == "deploy"
+        assert taskfile.tasks[0].desc == "Deploy to environment"
+        assert taskfile.tasks[0].requires == {"vars": [{"name": "ENV", "enum": ["dev", "beta", "prod"]}]}
+        # Test that gen_buffer works correctly with dict format
+        buffer = taskfile.tasks[0].gen_buffer()
+        assert "ENV=" in buffer
+        assert "task deploy" in buffer
+
+    def test_read_taskfile_with_mixed_format_requires(self, tmp_path):
+        """Test reading a Taskfile with mixed format requires (both string and dict)."""
+        taskfile_path = tmp_path / "Taskfile.yml"
+        taskfile_content = """
+tasks:
+  deploy:
+    desc: Deploy to environment
+    requires:
+      vars:
+        - VAR1
+        - name: ENV
+          enum: [dev, beta, prod]
+        - VAR2
+"""
+        taskfile_path.write_text(taskfile_content)
+
+        repo = TaskFileRepository(path=str(taskfile_path))
+        taskfile = repo._read()
+
+        assert len(taskfile.tasks) == 1
+        assert taskfile.tasks[0].name == "deploy"
+        # Test that gen_buffer works correctly with mixed format
+        buffer = taskfile.tasks[0].gen_buffer()
+        assert "VAR1=" in buffer
+        assert "ENV=" in buffer
+        assert "VAR2=" in buffer
+        assert "task deploy" in buffer
+
 
 class TestTaskfileFinder:
     """Test cases for the TaskfileFinder class."""

@@ -20,7 +20,13 @@ class Task(BaseModel):
 
     def gen_buffer(self) -> str:
         if self.requires:
-            args = " ".join([f"{v}=" for v in self.requires["vars"]])
+            var_names = []
+            for v in self.requires["vars"]:
+                if isinstance(v, dict):
+                    var_names.append(v["name"])
+                else:
+                    var_names.append(v)
+            args = " ".join([f"{v}=" for v in var_names])
             return f"{args} task {self.gen_command()}"
         else:
             return f"task {self.gen_command()}"

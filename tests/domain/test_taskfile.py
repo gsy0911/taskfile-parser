@@ -112,6 +112,44 @@ class TestTask:
         assert "VAR2=" in buffer
         assert "task myprefix:test-task" in buffer
 
+    def test_gen_buffer_with_dict_format_requires(self):
+        """Test generating buffer with dict format requirements (with name and enum)."""
+        task = Task(
+            desc="Deploy task",
+            prefix=None,
+            name="deploy",
+            requires={"vars": [{"name": "ENV", "enum": ["dev", "beta", "prod"]}]},
+        )
+        buffer = task.gen_buffer()
+        assert "ENV=" in buffer
+        assert "task deploy" in buffer
+
+    def test_gen_buffer_with_mixed_format_requires(self):
+        """Test generating buffer with mixed format requirements (both string and dict)."""
+        task = Task(
+            desc="Deploy task",
+            prefix=None,
+            name="deploy",
+            requires={"vars": ["VAR1", {"name": "ENV", "enum": ["dev", "beta", "prod"]}, "VAR2"]},
+        )
+        buffer = task.gen_buffer()
+        assert "VAR1=" in buffer
+        assert "ENV=" in buffer
+        assert "VAR2=" in buffer
+        assert "task deploy" in buffer
+
+    def test_gen_buffer_with_dict_format_requires_and_prefix(self):
+        """Test generating buffer with dict format requirements and prefix."""
+        task = Task(
+            desc="Deploy task",
+            prefix="backend",
+            name="deploy",
+            requires={"vars": [{"name": "ENV", "enum": ["dev", "beta", "prod"]}]},
+        )
+        buffer = task.gen_buffer()
+        assert "ENV=" in buffer
+        assert "task backend:deploy" in buffer
+
 
 class TestTaskfile:
     """Test cases for the Taskfile model."""
