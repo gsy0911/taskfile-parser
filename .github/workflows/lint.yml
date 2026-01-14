@@ -28,12 +28,26 @@ jobs:
       - name: Run ruff format check
         run: ruff format --check src/
 
-  typos:
+  ty:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
       
-      - name: Check for typos
-        uses: crate-ci/typos@v1.28.3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Install ty
+        run: uv tool install ty@latest
+      
+      - name: Run ty check
+        run: uv tool run ty check src/
