@@ -1,5 +1,4 @@
 import yaml
-from pydantic import BaseModel
 from pathlib import Path
 
 from taskfile_parser.domain.taskfile import Include, Task, Taskfile
@@ -16,15 +15,15 @@ class TaskFileRepository:
 
         includes = []
         for k, v in docs[0].get("includes", {}).items():
-            if type(v) == str:
+            if isinstance(v, str):
                 i = Include(prefix=k, taskfile=v)
                 includes.append(i)
-            elif type(v) == dict:
+            elif isinstance(v, dict):
                 i = Include(prefix=k, taskfile=v.get("taskfile", ""))
                 includes.append(i)
 
         tasks = []
-        for k, v in docs[0]["tasks"].items():
+        for k, v in docs[0].get("tasks", {}).items():
             t = Task(
                 prefix=self.prefix,
                 name=k,
@@ -39,6 +38,7 @@ class TaskFileRepository:
         tasks = base_taskfile.tasks
         for i in base_taskfile.includes:
             if i.taskfile.startswith("https://"):
+                # Remote includes are not currently supported
                 pass
             else:
                 relative_path = Path(i.taskfile)
