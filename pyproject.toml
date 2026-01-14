@@ -32,3 +32,28 @@ packages = ["src/taskfile_parser"]
 
 [dependency-groups]
 dev = []
+
+[tool.ruff]
+# Target Python 3.12
+target-version = "py312"
+
+# Set line length
+line-length = 100
+
+[tool.ruff.lint]
+# Enable common Python linting rules
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Indent with spaces
+indent-style = "space"

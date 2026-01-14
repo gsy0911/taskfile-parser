@@ -1,5 +1,6 @@
-import yaml
 from pathlib import Path
+
+import yaml
 
 from taskfile_parser.domain.taskfile import Include, Task, Taskfile
 
@@ -10,7 +11,7 @@ class TaskFileRepository:
         self.prefix = prefix
 
     def _read(self) -> Taskfile:
-        with open(self.path, "r", encoding="utf-8") as f:
+        with open(self.path, encoding="utf-8") as f:
             docs = list(yaml.safe_load_all(f))
 
         includes = []
@@ -43,9 +44,7 @@ class TaskFileRepository:
             else:
                 relative_path = Path(i.taskfile)
                 target_path = self.path.parent / relative_path
-                tasks.extend(
-                    TaskFileRepository(path=target_path, prefix=i.prefix)._read().tasks
-                )
+                tasks.extend(TaskFileRepository(path=target_path, prefix=i.prefix)._read().tasks)
 
         return tasks
 
