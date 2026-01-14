@@ -20,6 +20,9 @@ dependencies = [
     "PyYAML>=6.0.0",
 ]
 
+[project.scripts]
+parser = "taskfile_parser.cli:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
