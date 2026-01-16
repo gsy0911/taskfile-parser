@@ -341,7 +341,7 @@ class TestTaskfileFinder:
         found = finder.find()
 
         assert found is not None
-        # Should return one of them (glob returns the first found)
+        # Should return the first one found based on priority order
         assert Path(found).name in ["taskfile.yml", "taskfile.yaml"]
 
     def test_find_no_taskfile(self, tmp_path):
