@@ -365,22 +365,45 @@ class TestTaskfileFinder:
 
         assert found is None
 
-    def test_find_case_sensitivity(self, tmp_path):
-        """Test that the finder matches case-insensitively (via glob pattern)."""
-        # Create a Taskfile with different casing
+    def test_find_taskfile_uppercase_yml(self, tmp_path):
+        """Test finding a Taskfile.yml file (uppercase T)."""
         taskfile = tmp_path / "Taskfile.yml"
         taskfile.touch()
 
         finder = TaskfileFinder(root_dir=str(tmp_path))
         found = finder.find()
 
-        # The glob pattern "taskfile.y*" should match "Taskfile.yml" on case-insensitive systems
-        # but may not on case-sensitive systems. This test documents current behavior.
-        # On Linux (case-sensitive), this will be None; on Windows/Mac (case-insensitive), it may match
-        # Since the pattern is lowercase "taskfile.y*", let's create lowercase version
-        if found is None:
-            # If it didn't match, that's expected on case-sensitive systems
-            assert True
-        else:
-            # If it matched, verify it's the right file
-            assert Path(found).name == "Taskfile.yml"
+        assert found is not None
+        assert Path(found).name == "Taskfile.yml"
+
+    def test_find_taskfile_uppercase_yaml(self, tmp_path):
+        """Test finding a Taskfile.yaml file (uppercase T)."""
+        taskfile = tmp_path / "Taskfile.yaml"
+        taskfile.touch()
+
+        finder = TaskfileFinder(root_dir=str(tmp_path))
+        found = finder.find()
+
+        assert found is not None
+        assert Path(found).name == "Taskfile.yaml"
+
+    def test_find_priority_order(self, tmp_path):
+        """Test that find returns taskfiles in priority order."""
+        # Create all four variations
+        taskfile_yaml_lower = tmp_path / "taskfile.yaml"
+        taskfile_yml_lower = tmp_path / "taskfile.yml"
+        taskfile_yaml_upper = tmp_path / "Taskfile.yaml"
+        taskfile_yml_upper = tmp_path / "Taskfile.yml"
+
+        taskfile_yaml_lower.touch()
+        taskfile_yml_lower.touch()
+        taskfile_yaml_upper.touch()
+        taskfile_yml_upper.touch()
+
+        finder = TaskfileFinder(root_dir=str(tmp_path))
+        found = finder.find()
+
+        assert found is not None
+        # Should return the first one found in priority order:
+        # taskfile.yaml > taskfile.yml > Taskfile.yaml > Taskfile.yml
+        assert Path(found).name == "taskfile.yaml"

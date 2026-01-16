@@ -54,9 +54,15 @@ class TaskfileFinder:
         self.root_dir = Path(root_dir)
 
     def find(self) -> str | None:
-        candidates = []
-        for v in self.root_dir.glob("taskfile.y*"):
-            candidates.append(v)
-        if len(candidates) > 0:
-            return str(candidates[0])
+        # Check for all possible taskfile name variations
+        candidates = [
+            "taskfile.yaml",
+            "taskfile.yml",
+            "Taskfile.yaml",
+            "Taskfile.yml",
+        ]
+        for candidate in candidates:
+            taskfile_path = self.root_dir / candidate
+            if taskfile_path.exists():
+                return str(taskfile_path)
         return None
