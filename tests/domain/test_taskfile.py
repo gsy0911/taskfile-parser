@@ -121,7 +121,7 @@ class TestTask:
             requires={"vars": [{"name": "ENV", "enum": ["dev", "beta", "prod"]}]},
         )
         buffer = task.gen_buffer()
-        assert "ENV=" in buffer
+        assert "ENV=dev|beta|prod" in buffer
         assert "task deploy" in buffer
 
     def test_gen_buffer_with_mixed_format_requires(self):
@@ -134,7 +134,7 @@ class TestTask:
         )
         buffer = task.gen_buffer()
         assert "VAR1=" in buffer
-        assert "ENV=" in buffer
+        assert "ENV=dev|beta|prod" in buffer
         assert "VAR2=" in buffer
         assert "task deploy" in buffer
 
@@ -147,7 +147,7 @@ class TestTask:
             requires={"vars": [{"name": "ENV", "enum": ["dev", "beta", "prod"]}]},
         )
         buffer = task.gen_buffer()
-        assert "ENV=" in buffer
+        assert "ENV=dev|beta|prod" in buffer
         assert "task backend:deploy" in buffer
 
     def test_gen_buffer_with_requires_no_vars_key(self):
@@ -171,6 +171,30 @@ class TestTask:
         )
         buffer = task.gen_buffer()
         # Should only include VAR1 since the dict item is missing name
+        assert "VAR1=" in buffer
+        assert "task test-task" in buffer
+
+    def test_gen_buffer_with_enum_two_values(self):
+        """Test generating buffer with enum containing two values (dev, stg)."""
+        task = Task(
+            desc="Deploy task",
+            prefix=None,
+            name="deploy",
+            requires={"vars": [{"name": "ENV", "enum": ["dev", "stg"]}]},
+        )
+        buffer = task.gen_buffer()
+        assert "ENV=dev|stg" in buffer
+        assert "task deploy" in buffer
+
+    def test_gen_buffer_with_dict_without_enum(self):
+        """Test generating buffer with dict format but no enum (should show VAR=)."""
+        task = Task(
+            desc="Test task",
+            prefix=None,
+            name="test-task",
+            requires={"vars": [{"name": "VAR1"}]},
+        )
+        buffer = task.gen_buffer()
         assert "VAR1=" in buffer
         assert "task test-task" in buffer
 

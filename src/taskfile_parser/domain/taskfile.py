@@ -21,17 +21,24 @@ class Task(BaseModel):
     def gen_buffer(self) -> str:
         vars_list = self.requires.get("vars") if self.requires else None
         if vars_list:
-            var_names = []
+            var_args = []
             for v in vars_list:
                 if isinstance(v, dict):
                     # Extract 'name' from dict format, only if it exists and is non-empty
                     name = v.get("name", "")
                     if name:
-                        var_names.append(name)
+                        # Check if enum is specified
+                        enum_values = v.get("enum", [])
+                        if enum_values:
+                            # Join enum values with pipe separator
+                            enum_str = "|".join(str(val) for val in enum_values)
+                            var_args.append(f"{name}={enum_str}")
+                        else:
+                            var_args.append(f"{name}=")
                 else:
-                    var_names.append(v)
-            if var_names:
-                args = " ".join([f"{v}=" for v in var_names])
+                    var_args.append(f"{v}=")
+            if var_args:
+                args = " ".join(var_args)
                 return f"{args} task {self.gen_command()}"
         return f"task {self.gen_command()}"
 
