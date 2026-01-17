@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.request import urlopen
 
 import yaml
 
@@ -10,9 +11,12 @@ class TaskFileRepository:
         self.path = Path(path)
         self.prefix = prefix
 
-    def _read(self) -> Taskfile:
-        with open(self.path, encoding="utf-8") as f:
-            docs = list(yaml.safe_load_all(f))
+    def _read(self, content: str | None = None) -> Taskfile:
+        if content is not None:
+            docs = list(yaml.safe_load_all(content))
+        else:
+            with open(self.path, encoding="utf-8") as f:
+                docs = list(yaml.safe_load_all(f))
 
         includes = []
         for k, v in docs[0].get("includes", {}).items():
@@ -39,8 +43,15 @@ class TaskFileRepository:
         tasks = base_taskfile.tasks
         for i in base_taskfile.includes:
             if i.taskfile.startswith("https://"):
-                # Remote includes are not currently supported
-                pass
+                # Fetch remote taskfile via HTTP GET
+                try:
+                    with urlopen(i.taskfile) as response:
+                        content = response.read().decode("utf-8")
+                        remote_taskfile = TaskFileRepository(path="", prefix=i.prefix)._read(content=content)
+                        tasks.extend(remote_taskfile.tasks)
+                except Exception:
+                    # If fetching fails, skip this include
+                    pass
             else:
                 relative_path = Path(i.taskfile)
                 target_path = self.path.parent / relative_path

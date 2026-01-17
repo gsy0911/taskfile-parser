@@ -131,11 +131,26 @@ tasks:
 
 ### 外部Taskfileの読み込み
 
+#### ローカルファイル
+
 ```yaml
 includes:
   backend: ./backend/Taskfile.yml
   frontend:
     taskfile: ./frontend/Taskfile.yml
+
+tasks:
+  all:
+    desc: すべてのタスクを実行
+```
+
+#### リモートファイル（HTTP/HTTPS）
+
+```yaml
+includes:
+  shared: https://example.com/shared/Taskfile.yml
+  common:
+    taskfile: https://raw.githubusercontent.com/org/repo/main/Taskfile.yml
 
 tasks:
   all:
@@ -194,8 +209,8 @@ uv run ruff check --fix
 
 ## 制限事項
 
-- リモートinclude（`https://`で始まるURL）は現在サポートされていません
 - ネストされたincludeは1階層のみサポート
+- リモートincludeが読み込めない場合（ネットワークエラー等）、そのincludeはスキップされます
 
 ## ライセンス
 

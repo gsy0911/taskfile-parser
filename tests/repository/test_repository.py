@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from taskfile_parser.domain.taskfile import Taskfile
 from taskfile_parser.repository.repository import TaskfileFinder, TaskFileRepository
@@ -212,7 +213,7 @@ tasks:
         assert any(t.name == "sub-task" and t.prefix == "sub" for t in tasks)
 
     def test_read_tasks_with_remote_includes_skipped(self, tmp_path):
-        """Test that remote includes (https://) are skipped."""
+        """Test that remote includes (https://) are skipped when fetch fails."""
         taskfile_path = tmp_path / "Taskfile.yml"
         taskfile_content = """
 includes:
@@ -223,12 +224,118 @@ tasks:
 """
         taskfile_path.write_text(taskfile_content)
 
-        repo = TaskFileRepository(path=str(taskfile_path))
-        tasks = repo.read_tasks()
+        # Mock urlopen to raise an exception
+        with patch("taskfile_parser.repository.repository.urlopen") as mock_urlopen:
+            mock_urlopen.side_effect = Exception("Network error")
+            repo = TaskFileRepository(path=str(taskfile_path))
+            tasks = repo.read_tasks()
 
-        # Only local task should be present, remote include is skipped
-        assert len(tasks) == 1
-        assert tasks[0].name == "local-task"
+            # Only local task should be present, remote include is skipped due to error
+            assert len(tasks) == 1
+            assert tasks[0].name == "local-task"
+
+    def test_read_tasks_with_remote_includes_success(self, tmp_path):
+        """Test that remote includes (https://) are fetched and parsed successfully."""
+        taskfile_path = tmp_path / "Taskfile.yml"
+        taskfile_content = """
+includes:
+  remote: https://example.com/Taskfile.yml
+tasks:
+  local-task:
+    desc: Local task
+"""
+        taskfile_path.write_text(taskfile_content)
+
+        # Mock the remote taskfile content
+        remote_content = """
+tasks:
+  remote-build:
+    desc: Build remotely
+  remote-test:
+    desc: Test remotely
+"""
+
+        # Mock urlopen to return the remote content
+        with patch("taskfile_parser.repository.repository.urlopen") as mock_urlopen:
+            mock_response = MagicMock()
+            mock_response.read.return_value = remote_content.encode("utf-8")
+            mock_response.__enter__.return_value = mock_response
+            mock_response.__exit__.return_value = None
+            mock_urlopen.return_value = mock_response
+
+            repo = TaskFileRepository(path=str(taskfile_path))
+            tasks = repo.read_tasks()
+
+            # Should have local task + 2 remote tasks
+            assert len(tasks) == 3
+
+            # Check local task
+            local_tasks = [t for t in tasks if t.name == "local-task"]
+            assert len(local_tasks) == 1
+            assert local_tasks[0].desc == "Local task"
+            assert local_tasks[0].prefix is None
+
+            # Check remote tasks
+            remote_tasks = [t for t in tasks if t.prefix == "remote"]
+            assert len(remote_tasks) == 2
+            assert remote_tasks[0].name == "remote-build"
+            assert remote_tasks[0].desc == "Build remotely"
+            assert remote_tasks[1].name == "remote-test"
+            assert remote_tasks[1].desc == "Test remotely"
+
+    def test_read_tasks_with_multiple_remote_includes(self, tmp_path):
+        """Test handling multiple remote includes."""
+        taskfile_path = tmp_path / "Taskfile.yml"
+        taskfile_content = """
+includes:
+  remote1: https://example.com/remote1.yml
+  remote2: https://example.com/remote2.yml
+tasks:
+  local-task:
+    desc: Local task
+"""
+        taskfile_path.write_text(taskfile_content)
+
+        # Mock the remote taskfile contents
+        remote1_content = """
+tasks:
+  task1:
+    desc: Task from remote1
+"""
+        remote2_content = """
+tasks:
+  task2:
+    desc: Task from remote2
+"""
+
+        def mock_urlopen_side_effect(url):
+            mock_response = MagicMock()
+            if "remote1" in url:
+                mock_response.read.return_value = remote1_content.encode("utf-8")
+            elif "remote2" in url:
+                mock_response.read.return_value = remote2_content.encode("utf-8")
+            mock_response.__enter__.return_value = mock_response
+            mock_response.__exit__.return_value = None
+            return mock_response
+
+        with patch("taskfile_parser.repository.repository.urlopen") as mock_urlopen:
+            mock_urlopen.side_effect = mock_urlopen_side_effect
+
+            repo = TaskFileRepository(path=str(taskfile_path))
+            tasks = repo.read_tasks()
+
+            # Should have 1 local task + 2 remote tasks
+            assert len(tasks) == 3
+
+            # Check tasks from remote1
+            remote1_tasks = [t for t in tasks if t.prefix == "remote1"]
+            assert len(remote1_tasks) == 1
+            assert remote1_tasks[0].name == "task1"
+
+            # Check tasks from remote2
+            remote2_tasks = [t for t in tasks if t.prefix == "remote2"]
+            assert len(remote2_tasks) == 1
+            assert remote2_tasks[0].name == "task2"
 
     def test_read_empty_taskfile(self, tmp_path):
         """Test reading a Taskfile with no tasks or includes."""
