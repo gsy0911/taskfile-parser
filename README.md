@@ -34,7 +34,7 @@ pip install .
 
 ### CLIコマンド
 
-`taskfile-parser`は`parser`コマンドとしてCLIを提供します。
+このパッケージは`parser`コマンドを提供します。
 
 #### 基本的な使い方
 
