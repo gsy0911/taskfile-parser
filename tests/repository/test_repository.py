@@ -214,7 +214,7 @@ tasks:
         assert any(t.name == "sub-task" and t.prefix == "sub" for t in tasks)
 
     def test_read_tasks_with_remote_includes_skipped(self, tmp_path):
-        """Test that remote includes (https://) are skipped when fetch fails."""
+        """Test that remote includes (https://) are gracefully handled when fetch fails."""
         taskfile_path = tmp_path / "Taskfile.yml"
         taskfile_content = """
 includes:

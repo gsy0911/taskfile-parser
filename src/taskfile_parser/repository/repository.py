@@ -8,18 +8,14 @@ from taskfile_parser.domain.taskfile import Include, Task, Taskfile
 
 
 class TaskFileRepository:
-    def __init__(self, path: str = "", prefix: str | None = None):
+    def __init__(self, path: str | None = None, prefix: str | None = None):
         self.path = Path(path) if path else None
         self.prefix = prefix
 
-    def _read(self, content: str | None = None) -> Taskfile:
-        if content is not None:
-            docs = list(yaml.safe_load_all(content))
-        else:
-            if self.path is None:
-                raise ValueError("Path must be provided when reading from file")
-            with open(self.path, encoding="utf-8") as f:
-                docs = list(yaml.safe_load_all(f))
+    @classmethod
+    def _read_from_content(cls, content: str, prefix: str | None = None) -> Taskfile:
+        """Read and parse taskfile from string content."""
+        docs = list(yaml.safe_load_all(content))
 
         includes = []
         for k, v in docs[0].get("includes", {}).items():
@@ -33,13 +29,23 @@ class TaskFileRepository:
         tasks = []
         for k, v in docs[0].get("tasks", {}).items():
             t = Task(
-                prefix=self.prefix,
+                prefix=prefix,
                 name=k,
                 desc=v.get("desc", ""),
                 requires=v.get("requires", {}),
             )
             tasks.append(t)
         return Taskfile(includes=includes, tasks=tasks)
+
+    def _read(self, content: str | None = None) -> Taskfile:
+        if content is not None:
+            return self._read_from_content(content, self.prefix)
+        else:
+            if self.path is None:
+                raise ValueError("Path must be provided when reading from file")
+            with open(self.path, encoding="utf-8") as f:
+                content = f.read()
+            return self._read_from_content(content, self.prefix)
 
     def read_tasks(self) -> list[Task]:
         base_taskfile = self._read()
@@ -50,7 +56,7 @@ class TaskFileRepository:
                 try:
                     with urlopen(i.taskfile) as response:
                         content = response.read().decode("utf-8")
-                        remote_taskfile = TaskFileRepository(prefix=i.prefix)._read(content=content)
+                        remote_taskfile = TaskFileRepository._read_from_content(content, prefix=i.prefix)
                         tasks.extend(remote_taskfile.tasks)
                 except (URLError, HTTPError, OSError, ValueError):
                     # If fetching or parsing fails, skip this include
