@@ -5,7 +5,7 @@ from taskfile_parser.repository.repository import TaskfileFinder, TaskFileReposi
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="taskfile-buffer",
+        prog="parser",
     )
 
     # 引数・オプションの定義
