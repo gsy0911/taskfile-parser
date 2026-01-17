@@ -268,7 +268,7 @@ tasks:
         assert taskfile.tasks[0].requires == {"vars": [{"name": "ENV", "enum": ["dev", "beta", "prod"]}]}
         # Test that gen_buffer works correctly with dict format
         buffer = taskfile.tasks[0].gen_buffer()
-        assert "ENV=" in buffer
+        assert "ENV=dev|beta|prod" in buffer
         assert "task deploy" in buffer
 
     def test_read_taskfile_with_mixed_format_requires(self, tmp_path):
@@ -295,7 +295,7 @@ tasks:
         # Test that gen_buffer works correctly with mixed format
         buffer = taskfile.tasks[0].gen_buffer()
         assert "VAR1=" in buffer
-        assert "ENV=" in buffer
+        assert "ENV=dev|beta|prod" in buffer
         assert "VAR2=" in buffer
         assert "task deploy" in buffer
 
