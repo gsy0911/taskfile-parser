@@ -200,7 +200,3 @@ uv run ruff check --fix
 ## ライセンス
 
 MIT License
-
-## 作者
-
-gsy0911
