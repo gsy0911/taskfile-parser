@@ -1,6 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from urllib.error import URLError
+
+import httpx
 
 from taskfile_parser.domain.taskfile import Taskfile
 from taskfile_parser.repository.repository import TaskfileFinder, TaskFileRepository
@@ -225,9 +226,9 @@ tasks:
 """
         taskfile_path.write_text(taskfile_content)
 
-        # Mock urlopen to raise an exception
-        with patch("taskfile_parser.repository.repository.urlopen") as mock_urlopen:
-            mock_urlopen.side_effect = URLError("Network error")
+        # Mock httpx.get to raise an exception
+        with patch("taskfile_parser.repository.repository.httpx.get") as mock_get:
+            mock_get.side_effect = httpx.HTTPError("Network error")
             repo = TaskFileRepository(path=str(taskfile_path))
             tasks = repo.read_tasks()
 
@@ -256,13 +257,12 @@ tasks:
     desc: Test remotely
 """
 
-        # Mock urlopen to return the remote content
-        with patch("taskfile_parser.repository.repository.urlopen") as mock_urlopen:
+        # Mock httpx.get to return the remote content
+        with patch("taskfile_parser.repository.repository.httpx.get") as mock_get:
             mock_response = MagicMock()
-            mock_response.read.return_value = remote_content.encode("utf-8")
-            mock_response.__enter__.return_value = mock_response
-            mock_response.__exit__.return_value = None
-            mock_urlopen.return_value = mock_response
+            mock_response.text = remote_content
+            mock_response.raise_for_status = MagicMock()
+            mock_get.return_value = mock_response
 
             repo = TaskFileRepository(path=str(taskfile_path))
             tasks = repo.read_tasks()
@@ -309,20 +309,19 @@ tasks:
     desc: Task from remote2
 """
 
-        def mock_urlopen_side_effect(url):
+        def mock_get_side_effect(url):
             mock_response = MagicMock()
             if url == "https://example.com/remote1.yml":
-                mock_response.read.return_value = remote1_content.encode("utf-8")
+                mock_response.text = remote1_content
             elif url == "https://example.com/remote2.yml":
-                mock_response.read.return_value = remote2_content.encode("utf-8")
+                mock_response.text = remote2_content
             else:
-                raise URLError("URL not found")
-            mock_response.__enter__.return_value = mock_response
-            mock_response.__exit__.return_value = None
+                raise httpx.HTTPError("URL not found")
+            mock_response.raise_for_status = MagicMock()
             return mock_response
 
-        with patch("taskfile_parser.repository.repository.urlopen") as mock_urlopen:
-            mock_urlopen.side_effect = mock_urlopen_side_effect
+        with patch("taskfile_parser.repository.repository.httpx.get") as mock_get:
+            mock_get.side_effect = mock_get_side_effect
 
             repo = TaskFileRepository(path=str(taskfile_path))
             tasks = repo.read_tasks()

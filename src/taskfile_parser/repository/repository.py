@@ -1,7 +1,6 @@
 from pathlib import Path
-from urllib.error import HTTPError, URLError
-from urllib.request import urlopen
 
+import httpx
 import yaml
 
 from taskfile_parser.domain.taskfile import Include, Task, Taskfile
@@ -54,11 +53,12 @@ class TaskFileRepository:
             if i.taskfile.startswith("https://"):
                 # Fetch remote taskfile via HTTP GET
                 try:
-                    with urlopen(i.taskfile) as response:
-                        content = response.read().decode("utf-8")
-                        remote_taskfile = TaskFileRepository._read_from_content(content, prefix=i.prefix)
-                        tasks.extend(remote_taskfile.tasks)
-                except (URLError, HTTPError, OSError, ValueError):
+                    response = httpx.get(i.taskfile)
+                    response.raise_for_status()
+                    content = response.text
+                    remote_taskfile = TaskFileRepository._read_from_content(content, prefix=i.prefix)
+                    tasks.extend(remote_taskfile.tasks)
+                except (httpx.HTTPError, ValueError):
                     # If fetching or parsing fails, skip this include
                     pass
             else:
