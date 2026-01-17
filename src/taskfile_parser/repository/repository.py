@@ -1,18 +1,20 @@
 from pathlib import Path
 
+import httpx
 import yaml
 
 from taskfile_parser.domain.taskfile import Include, Task, Taskfile
 
 
 class TaskFileRepository:
-    def __init__(self, path: str, prefix: str | None = None):
-        self.path = Path(path)
+    def __init__(self, path: str | None = None, prefix: str | None = None):
+        self.path = Path(path) if path else None
         self.prefix = prefix
 
-    def _read(self) -> Taskfile:
-        with open(self.path, encoding="utf-8") as f:
-            docs = list(yaml.safe_load_all(f))
+    @classmethod
+    def _read_from_content(cls, content: str, prefix: str | None = None) -> Taskfile:
+        """Read and parse taskfile from string content."""
+        docs = list(yaml.safe_load_all(content))
 
         includes = []
         for k, v in docs[0].get("includes", {}).items():
@@ -26,7 +28,7 @@ class TaskFileRepository:
         tasks = []
         for k, v in docs[0].get("tasks", {}).items():
             t = Task(
-                prefix=self.prefix,
+                prefix=prefix,
                 name=k,
                 desc=v.get("desc", ""),
                 requires=v.get("requires", {}),
@@ -34,15 +36,35 @@ class TaskFileRepository:
             tasks.append(t)
         return Taskfile(includes=includes, tasks=tasks)
 
+    def _read(self, content: str | None = None) -> Taskfile:
+        if content is not None:
+            return self._read_from_content(content, self.prefix)
+        else:
+            if self.path is None:
+                raise ValueError("Path must be provided when reading from file")
+            with open(self.path, encoding="utf-8") as f:
+                content = f.read()
+            return self._read_from_content(content, self.prefix)
+
     def read_tasks(self) -> list[Task]:
         base_taskfile = self._read()
         tasks = base_taskfile.tasks
         for i in base_taskfile.includes:
             if i.taskfile.startswith("https://"):
-                # Remote includes are not currently supported
-                pass
+                # Fetch remote taskfile via HTTP GET
+                try:
+                    response = httpx.get(i.taskfile)
+                    response.raise_for_status()
+                    content = response.text
+                    remote_taskfile = TaskFileRepository._read_from_content(content, prefix=i.prefix)
+                    tasks.extend(remote_taskfile.tasks)
+                except (httpx.HTTPError, ValueError):
+                    # If fetching or parsing fails, skip this include
+                    pass
             else:
                 relative_path = Path(i.taskfile)
+                if self.path is None:
+                    raise ValueError("Base taskfile path required for resolving relative includes")
                 target_path = self.path.parent / relative_path
                 tasks.extend(TaskFileRepository(path=str(target_path), prefix=i.prefix)._read().tasks)
 
