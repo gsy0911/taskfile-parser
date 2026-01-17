@@ -1,5 +1,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from urllib.error import URLError
 
 from taskfile_parser.domain.taskfile import Taskfile
 from taskfile_parser.repository.repository import TaskfileFinder, TaskFileRepository
@@ -226,7 +227,7 @@ tasks:
 
         # Mock urlopen to raise an exception
         with patch("taskfile_parser.repository.repository.urlopen") as mock_urlopen:
-            mock_urlopen.side_effect = Exception("Network error")
+            mock_urlopen.side_effect = URLError("Network error")
             repo = TaskFileRepository(path=str(taskfile_path))
             tasks = repo.read_tasks()
 
@@ -310,10 +311,12 @@ tasks:
 
         def mock_urlopen_side_effect(url):
             mock_response = MagicMock()
-            if "remote1" in url:
+            if url == "https://example.com/remote1.yml":
                 mock_response.read.return_value = remote1_content.encode("utf-8")
-            elif "remote2" in url:
+            elif url == "https://example.com/remote2.yml":
                 mock_response.read.return_value = remote2_content.encode("utf-8")
+            else:
+                raise URLError("URL not found")
             mock_response.__enter__.return_value = mock_response
             mock_response.__exit__.return_value = None
             return mock_response

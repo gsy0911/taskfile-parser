@@ -1,4 +1,5 @@
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 import yaml
@@ -7,14 +8,16 @@ from taskfile_parser.domain.taskfile import Include, Task, Taskfile
 
 
 class TaskFileRepository:
-    def __init__(self, path: str, prefix: str | None = None):
-        self.path = Path(path)
+    def __init__(self, path: str = "", prefix: str | None = None):
+        self.path = Path(path) if path else None
         self.prefix = prefix
 
     def _read(self, content: str | None = None) -> Taskfile:
         if content is not None:
             docs = list(yaml.safe_load_all(content))
         else:
+            if self.path is None:
+                raise ValueError("Path must be provided when reading from file")
             with open(self.path, encoding="utf-8") as f:
                 docs = list(yaml.safe_load_all(f))
 
@@ -47,13 +50,15 @@ class TaskFileRepository:
                 try:
                     with urlopen(i.taskfile) as response:
                         content = response.read().decode("utf-8")
-                        remote_taskfile = TaskFileRepository(path="", prefix=i.prefix)._read(content=content)
+                        remote_taskfile = TaskFileRepository(prefix=i.prefix)._read(content=content)
                         tasks.extend(remote_taskfile.tasks)
-                except Exception:
-                    # If fetching fails, skip this include
+                except (URLError, HTTPError, OSError, ValueError):
+                    # If fetching or parsing fails, skip this include
                     pass
             else:
                 relative_path = Path(i.taskfile)
+                if self.path is None:
+                    raise ValueError("Base taskfile path required for resolving relative includes")
                 target_path = self.path.parent / relative_path
                 tasks.extend(TaskFileRepository(path=str(target_path), prefix=i.prefix)._read().tasks)
 
