@@ -31,6 +31,7 @@ class Task(BaseModel):
                         enum_values = v.get("enum", [])
                         if enum_values:
                             # Join enum values with pipe separator
+                            # Enum values are expected to be simple types (str, int, etc.)
                             enum_str = "|".join(str(val) for val in enum_values)
                             var_args.append(f"{name}={enum_str}")
                         else:
