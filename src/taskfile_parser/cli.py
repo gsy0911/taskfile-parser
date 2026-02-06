@@ -20,6 +20,7 @@ def main():
     tasks = TaskFileRepository(path).read_tasks()
     target_task = [v for v in tasks if v.gen_command() == task_name]
     buffer = target_task[0].gen_buffer()
+    print(buffer)
     return buffer
 
 
